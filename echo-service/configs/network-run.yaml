@@ -1,0 +1,66 @@
+apiVersion: fn.kpt.dev/v1alpha1
+kind: StarlarkRun
+metadata:
+  name: network-run
+params:
+  app: test-app # use this to search/create resource names, eg test-app-cert, test-app-ingress
+  hosts: # these are to be '||' in route matching rules
+  # create a single cert with this domain
+  - domain1.test.com
+  - domain2.test.com
+  routes:
+  - match: Path(`/test`) # [3] && (Host(`domain1.test.com``) || Host(`domain2.test.com`)) 
+    priority: 10 # [4]
+    middlewares: # [5]
+    - name: middleware1 # [6]
+      namespace: default # [7]
+    services: # [8]
+    # - kind: Service - this is boilerplate, our function can add
+    - name: foo
+      namespace: default
+      passHostHeader: true
+      port: 80 # [9]
+      responseForwarding:
+        flushInterval: 1ms
+      scheme: https
+      serversTransport: transport # [10]
+      sticky:
+        cookie:
+          httpOnly: true
+          name: cookie
+          secure: true
+          sameSite: none
+      strategy: RoundRobin
+      weight: 10
+source: |
+  def ensure_inject_network_parameters(r, inputRoutes, inputHosts, appName):
+
+    hostExp = ""
+    for host in inputHosts:
+        hostExp = hostExp + "Host(`{}`) || ".format(host)
+    
+    if hostExp.endswith(" || "):
+      hostExp = hostExp[:-len(" || ")]
+
+    if r["apiVersion"] == "traefik.containo.us/v1alpha1" and r["kind"] == "IngressRoute" and r["metadata"]["name"] == appName:
+        routes = r["spec"]["routes"]
+        for inputRoute in inputRoutes:
+            matchExp = hostExp + " && " + inputRoute["match"]
+
+            for route in routes:
+              if matchExp == route["match"]:
+                return
+            nextRoute = inputRoute
+            nextRoute["match"] = matchExp
+            routes.append(nextRoute)
+        
+        tls = r["spec"]["tls"]
+        tls["secretName"] = appName + "-cert"
+
+  inputParams = ctx.resource_list["functionConfig"]["params"]
+  inputRoutes = inputParams["routes"]
+  inputHosts = inputParams["hosts"]
+  appName = inputParams["app"]
+  
+  for resource in ctx.resource_list["items"]:
+    ensure_inject_network_parameters(resource, inputRoutes, inputHosts, appName)

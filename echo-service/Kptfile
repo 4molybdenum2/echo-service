@@ -1,0 +1,46 @@
+apiVersion: kpt.dev/v1
+kind: Kptfile
+metadata:
+  name: echo-service
+  annotations:
+    config.kubernetes.io/local-config: "true"
+info:
+  description: echo service package
+pipeline:
+  mutators:
+    # deployment mutators (create setters)
+    - image: gcr.io/kpt-fn/search-replace:unstable
+      configMap:
+        by-path: spec.replicas
+        by-file-path: deployment.yaml
+        put-comment: 'kpt-set: ${replicas}'
+    - image: gcr.io/kpt-fn/search-replace:unstable
+      configMap:
+        by-path: spec.**.cpu
+        by-file-path: deployment.yaml
+        put-comment: 'kpt-set: ${cpu}'
+    - image: gcr.io/kpt-fn/search-replace:unstable
+      configMap:
+        by-path: spec.**.memory
+        by-file-path: deployment.yaml
+        put-comment: 'kpt-set: ${memory}'
+    # cert mutators (create setters)
+    - image: gcr.io/kpt-fn/search-replace:unstable
+      configMap:
+        by-path: spec.secretName
+        by-file-path: cert.yaml
+        put-comment: 'kpt-set: ${secretName}'
+    - image: gcr.io/kpt-fn/search-replace:unstable
+      configMap:
+        by-path: spec.dnsNames
+        by-file-path: cert.yaml
+        put-comment: 'kpt-set: ${dnsNames}'
+    # ingress mutators
+    - image: gcr.io/kpt-fn/starlark:v0.4.3
+      configPath: configs/network-run.yaml
+    # kustomize mutators
+    - image: gcr.io/kpt-fn/search-replace:unstable
+      configMap:
+        by-path: namespace
+        by-file-path: kustomization.yaml
+        put-comment: 'kpt-set: ${namespace}'
