@@ -3,13 +3,13 @@ kind: StarlarkRun
 metadata:
   name: network-run
 params:
-  app: test-app # use this to search/create resource names, eg test-app-cert, test-app-ingress
+  app: echo-server-insecure # use this to search/create resource names, eg test-app-cert, test-app-ingress
   hosts: # these are to be '||' in route matching rules
   # create a single cert with this domain
   - domain1.test.com
   - domain2.test.com
   routes:
-  - match: Path(`/test`) # [3] && (Host(`domain1.test.com``) || Host(`domain2.test.com`)) 
+  - match: Path(`/somepath2`) # [3] && (Host(`domain1.test.com``) || Host(`domain2.test.com`)) 
     priority: 10 # [4]
     middlewares: # [5]
     - name: middleware1 # [6]
