@@ -36,8 +36,8 @@ pipeline:
         by-file-path: cert.yaml
         put-comment: 'kpt-set: ${dnsNames}'
     # ingress mutators
-    - image: 4molybdenum2/kpt-network-resource:latest
-      configPath: fn.yaml
+    - image: ghcr.io/4molybdenum2/injectroutes:latest
+      configPath: set-routes.yaml
     # kustomize mutators
     - image: gcr.io/kpt-fn/search-replace:unstable
       configMap:
