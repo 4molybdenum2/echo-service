@@ -32,35 +32,4 @@ params:
           sameSite: none
       strategy: RoundRobin
       weight: 10
-source: |
-  def ensure_inject_network_parameters(r, inputRoutes, inputHosts, appName):
-
-    hostExp = ""
-    for host in inputHosts:
-        hostExp = hostExp + "Host(`{}`) || ".format(host)
-    
-    if hostExp.endswith(" || "):
-      hostExp = hostExp[:-len(" || ")]
-
-    if r["apiVersion"] == "traefik.containo.us/v1alpha1" and r["kind"] == "IngressRoute" and r["metadata"]["name"] == appName:
-        routes = r["spec"]["routes"]
-        for inputRoute in inputRoutes:
-            matchExp = hostExp + " && " + inputRoute["match"]
-
-            for route in routes:
-              if matchExp == route["match"]:
-                return
-            nextRoute = inputRoute
-            nextRoute["match"] = matchExp
-            routes.append(nextRoute)
-        
-        tls = r["spec"]["tls"]
-        tls["secretName"] = appName + "-cert"
-
-  inputParams = ctx.resource_list["functionConfig"]["params"]
-  inputRoutes = inputParams["routes"]
-  inputHosts = inputParams["hosts"]
-  appName = inputParams["app"]
-  
-  for resource in ctx.resource_list["items"]:
-    ensure_inject_network_parameters(resource, inputRoutes, inputHosts, appName)
+source: "def ensure_inject_network_parameters(r, inputRoutes, inputHosts, appName):\n\n  hostExp = \"\"\n  for host in inputHosts:\n      hostExp = hostExp + \"Host(`{}`) || \".format(host)\n  \n  if hostExp.endswith(\" || \"):\n    hostExp = hostExp[:-len(\" || \")]\n\n  if r[\"apiVersion\"] == \"traefik.containo.us/v1alpha1\" and r[\"kind\"] == \"IngressRoute\" and r[\"metadata\"][\"name\"] == appName:\n      routes = r[\"spec\"][\"routes\"]\n      for inputRoute in inputRoutes:\n          matchExp = hostExp + \" && \" + inputRoute[\"match\"]\n\n          for route in routes:\n            if matchExp == route[\"match\"]:\n              return\n          nextRoute = inputRoute\n          nextRoute[\"match\"] = matchExp\n          routes.append(nextRoute)\n      \n      tls = r[\"spec\"][\"tls\"]\n      tls[\"secretName\"] = appName + \"-cert\"\n\ninputParams = ctx.resource_list[\"functionConfig\"][\"params\"]\ninputRoutes = inputParams[\"routes\"]\ninputHosts = inputParams[\"hosts\"]\nappName = inputParams[\"app\"]\n\nfor resource in ctx.resource_list[\"items\"]:\n  ensure_inject_network_parameters(resource, inputRoutes, inputHosts, appName)\n"

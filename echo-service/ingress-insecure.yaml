@@ -1,7 +1,7 @@
 apiVersion: traefik.containo.us/v1alpha1
 kind: IngressRoute
 metadata:
-  name: echo-server-insecure
+  name: testapp
 spec:
   entryPoints:
     - web
@@ -19,49 +19,10 @@ spec:
       services:
         - name: echo-server
           port: 80
-    - match: Host(`domain1.test.com`) || Host(`domain2.test.com`) && Path(`/somepath`)
-      middlewares:
-        - name: middleware1
-          namespace: default
-      priority: 10
+    - kind: Rule
+      match: Host(`domain1.test.com`) || Host(`domain2.test.com`) && Path(`/test1`)
       services:
-        - name: foo
-          namespace: default
-          passHostHeader: true
+        - name: echo-server
           port: 80
-          responseForwarding:
-            flushInterval: 1ms
-          scheme: https
-          serversTransport: transport
-          sticky:
-            cookie:
-              httpOnly: true
-              name: cookie
-              sameSite: none
-              secure: true
-          strategy: RoundRobin
-          weight: 10
-    - match: Host(`domain1.test.com`) || Host(`domain2.test.com`) && Path(`/somepath2`)
-      middlewares:
-        - name: middleware1
-          namespace: default
-      priority: 10
-      services:
-        - name: foo
-          namespace: default
-          passHostHeader: true
-          port: 80
-          responseForwarding:
-            flushInterval: 1ms
-          scheme: https
-          serversTransport: transport
-          sticky:
-            cookie:
-              httpOnly: true
-              name: cookie
-              sameSite: none
-              secure: true
-          strategy: RoundRobin
-          weight: 10
   tls:
-    secretName: echo-server-insecure-cert
+    secretName: testapp-cert
