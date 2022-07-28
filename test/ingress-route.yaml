@@ -1,0 +1,28 @@
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRoute
+metadata:
+  name: testapp
+spec:
+  entryPoints:
+  - web
+  routes:
+  - match: Host(`test.com`)
+    kind: Rule
+    services:
+    - name: echo-server
+      port: 80
+  - match: Host(`test-secure.com`) && Path(`/vpn`)
+    kind: Rule
+    middlewares:
+    - name: vpn-only
+      namespace: traefik
+    services:
+    - name: echo-server
+      port: 80
+  - kind: Rule
+    match: Host(`domain1.test.com`) || Host(`domain2.test.com`) && Path(`/test1`)
+    services:
+    - name: echo-server
+      port: 80
+  tls:
+    secretName: testapp-cert
